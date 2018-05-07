@@ -70,13 +70,17 @@ class TestEngine:
         # status, content = self.request_list[request_type](request_url)
 
         status,content=TestRequest(request_type,request_url,request_data,self.headers)
+        content_data=json.loads(content)
 
         if status == expect_result:
             print "\033[32;1m[SUCCESS] %s" % step_name
+
             # self.check_content(content)
             SaveData(data_save, content)
         else:
             print "\033[31;1m[FAILED] %s" % step_name
+            error=content_data[u'error'].encode('utf-8')
+            print self.step_name+"请求失败，错误信息为："+str(status)+","+error
 
     # key = [key1, key2, key3]
     def check_content(self, content, json_keys, json_value):
