@@ -8,11 +8,10 @@ from oauthlib.oauth2 import BackendApplicationClient
 from requests_oauthlib import OAuth2Session
 from requests.auth import HTTPBasicAuth
 
-IP = 'http://192.168.1.172'
-PORT = '8080'
+IP = 'http://192.168.1.140'
+PORT = '8888'
 
 ADDRESS = "%s:%s" % (IP, PORT)
-
 URI = ""
 
 data = {}
@@ -31,19 +30,20 @@ class TestEngine:
         data = {}
         headers_data = TestOauthRequest()
         authorization = headers_data[u'token_type'] + " " + headers_data[u'access_token']
-        self.engine_list = []
-        self.request_list = {}
         headers = {
             'content-type': "application/json",
             'tenant': "tenant_test",
             'authorization': authorization,
         }
-        self.headers=headers
+        self.headers = headers
         # self.request_list["post"] = TestPostRequest
         # self.request_list["put"] = TestPutRequest
         # self.request_list["get"] = TestGetRequest
         # self.request_list["delete"] = TestDeleteRequest
-        self.response_data={}
+        self.engine_list = []
+        self.request_list = {}
+        self.response_data = {}
+
     def addcase(self, case):
         self.engine_list.append(case)
 
@@ -54,7 +54,6 @@ class TestEngine:
     def docase(self, case):
         step_name = case[0]
         print step_name
-
         request_type = case[1]
         request_url = case[2]
         # request_argument_type = case[3]
@@ -64,23 +63,21 @@ class TestEngine:
         self.step_execute(step_name, request_type, request_url, request_data, expect_result,
                           data_save)
 
-    def step_execute(self, step_name, request_url, request_type, request_data, expect_result,
+    def step_execute(self, step_name, request_type, request_url, request_data, expect_result,
                      data_save):
-
         # status, content = self.request_list[request_type](request_url)
-
-        status,content=TestRequest(request_type,request_url,request_data,self.headers)
-        content_data=json.loads(content)
-
-        if status == expect_result:
+        responseData = TestRequest(request_type, request_url, request_data, self.headers)
+        content = json.loads(responseData.content)
+        if responseData.status_code!=200:
+            error = content[u'error'].encode('utf-8')
+            print "\033[31;1m[FAILED] %s" % step_name + "请求失败，错误信息为：" + str(responseData.status_code) + "," + error
+        elif content[u'result']== expect_result:
             print "\033[32;1m[SUCCESS] %s" % step_name
-
             # self.check_content(content)
             SaveData(data_save, content)
+            print(data)
         else:
             print "\033[31;1m[FAILED] %s" % step_name
-            error=content_data[u'error'].encode('utf-8')
-            print self.step_name+"请求失败，错误信息为："+str(status)+","+error
 
     # key = [key1, key2, key3]
     def check_content(self, content, json_keys, json_value):
@@ -113,13 +110,27 @@ def SaveData(data_save, responseData):
             if i == len(data_save[key]):
                 data[key] = result
 
-def TestRequest(type,url,reuest_data,headers):
+
+def TestRequest(type, url, reuest_data, headers):
+    body=None
+    params=None
     if "params" in reuest_data:
-        params=reuest_data["path"]
+        params = reuest_data["params"]
     if "body" in reuest_data:
-        body=reuest_data["body"]
-    r=requests.request(type,url,params=params,data=body,headers=headers)
+        body = reuest_data["body"]
+    print(ADDRESS+url)
+    print(body)
+    print(params)
+    if params==None and body==None:
+        r = requests.request(type, ADDRESS+url,headers=headers)
+    elif params!=None and body!=None:
+        r = requests.request(type, ADDRESS+url,params=params,data=body,headers=headers)
+    elif params!=None and body==None:
+        r = requests.request(type, ADDRESS+url,params=params,headers=headers)
+    elif params==None and body!=None:
+        r = requests.request(type, ADDRESS+url,headers=headers)
     return r;
+
 
 def TestGetRequest(url, data_type, data):
     if data == None:
@@ -159,19 +170,27 @@ def ExpectResult():
     pass
 
 
+# 获取token信息
 def TestOauthRequest():
     r = requests.post(ADDRESS + "/oauth/token?grant_type=password&username=user&password=password",
-                      auth=HTTPBasicAuth('', ''))
-    data = json.loads(r.content)
+                      auth=HTTPBasicAuth('chiron-client', 'chiron'))
+    token_data = json.loads(r.content)
     print r.content
-    r = requests.post(ADDRESS + "/oauth/token?grant_type=refresh_token&refresh_token=%s" % data[u'refresh_token'],
+    r = requests.post(ADDRESS + "/oauth/token?grant_type=refresh_token&refresh_token=%s" % token_data[u'refresh_token'],
                       auth=HTTPBasicAuth('', ''))
-    print r.content
-    return data[u'access_token']
+    return token_data
+
+
+# def SetAddress(ip, port):
+#     if ip != None and port != None:
+#         ADDRESS = "%s:%s" % (ip, port)
 
 
 if __name__ == '__main__':
     # print TestOauthRequest()
+    print(ADDRESS)
+    print(TestOauthRequest())
     te = TestEngine()
+
     # te.execute()
     print te.check_content('{"test1": {"test2": 1}}', ["test1", "test2"], 1)
