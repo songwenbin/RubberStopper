@@ -7,7 +7,7 @@ from oauthlib.oauth2 import LegacyApplicationClient
 from oauthlib.oauth2 import BackendApplicationClient
 from requests_oauthlib import OAuth2Session
 from requests.auth import HTTPBasicAuth
-
+import testcase
 IP = 'http://192.168.1.140'
 PORT = '8888'
 
@@ -15,14 +15,13 @@ ADDRESS = "%s:%s" % (IP, PORT)
 URI = ""
 
 data = {}
-testcase1 = {
+testcase1 = []
     # ["step_name", "request_type", "request_url", "request_data_type", "request_data", "expect_result", [{label:{"key":"value"}}]]
     # ["step_name", "request_type", "request_url", "request_data", "expect_result", "data_save"]
     # request_data:{"path":"value","param":"value"}
     # data_save:{"key":[test1,test2,test3],"key":[test4,test5,test6]}
     # expect_result:{"key":[[test1,test2,test3],excpet_content],"key2":[[test4,test5,test6],excpet_content_2]}
     # data_save{"key1":[test1,test2,test3],"key2":[test4,test5,test6]}
-}
 
 
 class TestEngine:
@@ -48,8 +47,8 @@ class TestEngine:
         self.engine_list.append(case)
 
     def execute(self):
-        for case in self.engine_list:
-            self.docase(case)
+        for index,value in enumerate(self.engine_list):
+            self.docase(value)
 
     def docase(self, case):
         step_name = case[0]
@@ -68,10 +67,10 @@ class TestEngine:
         # status, content = self.request_list[request_type](request_url)
         responseData = TestRequest(request_type, request_url, request_data, self.headers)
         content = json.loads(responseData.content)
-        if responseData.status_code!=200:
+        if responseData.status_code != 200:
             error = content[u'error'].encode('utf-8')
             print "\033[31;1m[FAILED] %s" % step_name + "请求失败，错误信息为：" + str(responseData.status_code) + "," + error
-        elif content[u'result']== expect_result:
+        elif content[u'result'] == expect_result:
             print "\033[32;1m[SUCCESS] %s" % step_name
             # self.check_content(content)
             SaveData(data_save, content)
@@ -104,7 +103,7 @@ def SaveData(data_save, responseData):
         result = responseData
         i = 0
         for key1 in data_save[key]:
-            if key1 in responseData:
+            if key1 in result:
                 result = result[key1]
                 i = i + 1
             if i == len(data_save[key]):
@@ -112,23 +111,23 @@ def SaveData(data_save, responseData):
 
 
 def TestRequest(type, url, reuest_data, headers):
-    body=None
-    params=None
+    body = None
+    params = None
     if "params" in reuest_data:
         params = reuest_data["params"]
     if "body" in reuest_data:
         body = reuest_data["body"]
-    print(ADDRESS+url)
+    print(ADDRESS + url)
     print(body)
     print(params)
-    if params==None and body==None:
-        r = requests.request(type, ADDRESS+url,headers=headers)
-    elif params!=None and body!=None:
-        r = requests.request(type, ADDRESS+url,params=params,data=body,headers=headers)
-    elif params!=None and body==None:
-        r = requests.request(type, ADDRESS+url,params=params,headers=headers)
-    elif params==None and body!=None:
-        r = requests.request(type, ADDRESS+url,headers=headers)
+    if params == None and body == None:
+        r = requests.request(type, ADDRESS + url, headers=headers)
+    elif params != None and body != None:
+        r = requests.request(type, ADDRESS + url, params=params, data=body, headers=headers)
+    elif params != None and body == None:
+        r = requests.request(type, ADDRESS + url, params=params, headers=headers)
+    elif params == None and body != None:
+        r = requests.request(type, ADDRESS + url, headers=headers,data=body)
     return r;
 
 
@@ -179,18 +178,13 @@ def TestOauthRequest():
     r = requests.post(ADDRESS + "/oauth/token?grant_type=refresh_token&refresh_token=%s" % token_data[u'refresh_token'],
                       auth=HTTPBasicAuth('', ''))
     return token_data
-
-
-# def SetAddress(ip, port):
-#     if ip != None and port != None:
-#         ADDRESS = "%s:%s" % (ip, port)
-
-
 if __name__ == '__main__':
     # print TestOauthRequest()
     print(ADDRESS)
-    print(TestOauthRequest())
+    # print(TestOauthRequest())
+    testcase1=testcase.cases;
     te = TestEngine()
-
-    # te.execute()
+    for index,value in enumerate(testcase1):
+        te.addcase(value)
+    te.execute()
     print te.check_content('{"test1": {"test2": 1}}', ["test1", "test2"], 1)
