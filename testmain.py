@@ -2,13 +2,14 @@
 import requests
 import unittest
 import json
+import jinja2
 
 from oauthlib.oauth2 import LegacyApplicationClient
 from oauthlib.oauth2 import BackendApplicationClient
 from requests_oauthlib import OAuth2Session
 from requests.auth import HTTPBasicAuth
 import testcase
-IP = 'http://192.168.1.140'
+IP = 'http://192.168.1.79'
 PORT = '8888'
 
 ADDRESS = "%s:%s" % (IP, PORT)
@@ -44,12 +45,12 @@ class TestEngine:
         self.response_data = {}
 
     def addcase(self, case):
-        self.engine_list.append(case)
-
+        # self.engine_list.append(case)
+        self.engine_list=case
     def execute(self):
-        for index,value in enumerate(self.engine_list):
-            self.docase(value)
-
+        # for index,value in enumerate(self.engine_list):
+        #     self.docase(value)
+        self.docase(self.engine_list)
     def docase(self, case):
         step_name = case[0]
         print step_name
@@ -182,9 +183,10 @@ if __name__ == '__main__':
     # print TestOauthRequest()
     print(ADDRESS)
     # print(TestOauthRequest())
-    testcase1=testcase.cases;
+
     te = TestEngine()
-    for index,value in enumerate(testcase1):
+    for index,value in enumerate(testcase.cases):
         te.addcase(value)
-    te.execute()
+        te.execute()
+
     print te.check_content('{"test1": {"test2": 1}}', ["test1", "test2"], 1)
