@@ -11,12 +11,17 @@ from requests_oauthlib import OAuth2Session
 from requests.auth import HTTPBasicAuth
 
 import openpyxl
+import sys
 
-IP = 'http://192.168.1.79'
+reload(sys)
+sys.setdefaultencoding('utf8')
+
+IP = 'http://localhost'
 PORT = '8888'
 
 ADDRESS = "%s:%s" % (IP, PORT)
 URI = ""
+
 
 def parse_excel(cases_file):
     user_cases = []
@@ -28,7 +33,7 @@ def parse_excel(cases_file):
         current_step = None
         for row in ws.iter_rows(max_col=8):
             if row[0].value == None:
-                #if row[4].value <> None:
+                # if row[4].value <> None:
                 #    current_step.request_data.append(row[4].value)
                 if row[6].value <> None:
                     current_step.expect_value.append(row[6].value)
@@ -39,12 +44,13 @@ def parse_excel(cases_file):
                 step.request_data.append(row[4].value)
                 step.expect_value.append(row[6].value)
                 step.var_getvalue.append(row[7].value)
-                    
+
             current_step = step
             case.steps.append(current_step)
 
         user_cases.append(case)
     return user_cases
+
 
 def print_user_cases(user_cases):
     for case in user_cases:
@@ -63,15 +69,24 @@ def print_user_cases(user_cases):
             print "===================="
         print "================================="
 
-    
+
 class UserCase:
     def __init__(self, name):
+        headers_data = TestOauthRequest()
+        authorization = headers_data[u'token_type'] + " " + headers_data[u'access_token']
+        headers = {
+            'content-type': "application/json",
+            'tenant': "tenant_test",
+            'authorization': authorization,
+        }
+        self.headers = headers
         self.name = name
         self.steps = []
         self.env = {}
 
+
 class Step:
-    def __init__(self, case_name, request_type, request_url,request_data_type, expect_code):
+    def __init__(self, case_name, request_type, request_url, request_data_type, expect_code):
         self.step_name = case_name
         self.request_type = request_type
         self.request_url = request_url
@@ -80,6 +95,7 @@ class Step:
         self.expect_code = expect_code
         self.expect_value = []
         self.var_getvalue = []
+
 
 class TestEngine:
     def __init__(self):
@@ -107,11 +123,14 @@ class TestEngine:
     def execute(self, storys):
         for cases in storys:
             self.docase(cases)
+
     def docase(self, cases):
         for case in cases.steps:
-            self.step_execute(cases, case, case.step_name, case.request_type, case.request_url, case.request_data, case.expect_code, case.expect_value, case.var_getvalue)
+            self.step_execute(cases, case, case.step_name, case.request_type, case.request_url, case.request_data_type,case.request_data,
+                              case.expect_code, case.expect_value, case.var_getvalue)
 
-    def step_execute(self, cases, case, step_name, request_type, request_url, request_data, expect_result, expect_value, var_getvalue):
+    def step_execute(self, cases, case, step_name, request_type, request_url,request_data_type, request_data, expect_result, expect_value,
+                     var_getvalue):
         if len(infer(request_data[0]).items()) <> 0:
             template = Template(request_data[0])
             key = infer(request_data[0]).items()[0][0]
@@ -121,8 +140,10 @@ class TestEngine:
 
         if request_type == None:
             return
-        #status, content = self.request_list[request_type.encode('ascii')](request_url, "path", "test")
-        status, content = self.request_list[request_type](request_url, "path", "test")
+        # status, content = self.request_list[request_type.encode('ascii')](request_url, "path", "test")
+        status, content = self.request_list[request_type](request_url, cases.headers, request_data_type, request_data)
+        print "status=", status
+        print "content:", content
         if status == expect_result:
             print "\033[32;1m[SUCCESS] %s" % step_name
 
@@ -132,11 +153,11 @@ class TestEngine:
                 result = self.get_content(content, t.items()[0][1])
                 cases.env[t.items()[0][0]] = result
             # 检查入参
-            for val in case.expect_value: 
+            for val in case.expect_value:
                 t = eval(val)
                 if self.check_content(content, t.items()[0][1], t.items()[0][0]):
                     print "\033[32;1m[SUCCESS] %s" % t.items()[0][0]
-                else:   
+                else:
                     print "\033[31;1m[FAILED] %s" % t.items()[0][0]
         else:
             print "\033[31;1m[FAILED] %s" % step_name
@@ -173,7 +194,6 @@ class TestEngine:
             return False
 
 
-
 '''
 def TestRequest(type, url, reuest_data, headers):
     body = None
@@ -196,6 +216,7 @@ def TestRequest(type, url, reuest_data, headers):
     return r;
 '''
 
+
 def TestGetRequest(url, data_type, data):
     if data == None:
         r = requests.get(url)
@@ -208,27 +229,44 @@ def TestGetRequest(url, data_type, data):
     return r.status_code, r.content
 
 
-def TestPostRequest(url, data_type, data):
-
-    return 200, '{"test": {"test2": {"test": "value"} } }'
+def TestPostRequest(url,headers, data_type, data):
+    # return 200, '{"test": {"test2": {"test": "value"} } }'
+    url = ADDRESS + url
+    print "235:url+",url
     if data == None:
         r = requests.post(url)
     else:
         if data_type == "path":
-            r = requests.post(url, params=data)
+            r = requests.post(url,headers=headers, params=data[0])
         elif data_type == "body":
-            r = requests.post(url, data=data)
+            r = requests.post(url,headers=headers, data=data[0])
 
     return r.status_code, r.content
 
 
-def TestPutRequest(url, data_type, data):
-    r = requests.post(url)
+def TestPutRequest(url, headers, data_type, data):
+    url = ADDRESS + url
+    if data == None:
+        r = requests.put(url)
+    else:
+        if data_type == "path":
+            r = requests.put(url,headers=headers, params=data)
+        elif data_type == "body":
+            r = requests.put(url,headers=headers, data=data)
+
     return r.status_code, r.content
 
 
-def TestDeleteRequest(url, data_type, data):
-    r = requests.post(url)
+def TestDeleteRequest(url, headers, data_type, data):
+    url = ADDRESS + url
+    if data == None:
+        r = requests.delete(url)
+    else:
+        if data_type == "path":
+            r = requests.delete(url,headers=headers, params=data)
+        elif data_type == "body":
+            r = requests.delete(url,headers=headers, data=data)
+
     return r.status_code, r.content
 
 
@@ -245,16 +283,18 @@ def TestOauthRequest():
     r = requests.post(ADDRESS + "/oauth/token?grant_type=refresh_token&refresh_token=%s" % token_data[u'refresh_token'],
                       auth=HTTPBasicAuth('', ''))
     return token_data
+
+
 if __name__ == '__main__':
     # print TestOauthRequest()
     # print(TestOauthRequest())
 
-    #te = TestEngine()
-    #for index,value in enumerate(testcase.cases):
+    # te = TestEngine()
+    # for index,value in enumerate(testcase.cases):
     #    te.addcase(value)
     #    te.execute()
 
-    #print te.check_content('{"test1": {"test2": 1}}', ["test1", "test2"], 1)
+    # print te.check_content('{"test1": {"test2": 1}}', ["test1", "test2"], 1)
 
     user_cases = parse_excel("sample.xlsx")
     print_user_cases(user_cases)
