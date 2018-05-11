@@ -32,6 +32,8 @@ def parse_excel(cases_file):
         ws = wb[name]
         current_step = None
         for row in ws.iter_rows(max_col=8):
+            if row[0]==None and row[6]==None and row[7]==None:
+                return 
             if row[0].value == None:
                 # if row[4].value <> None:
                 #    current_step.request_data.append(row[4].value)
@@ -126,10 +128,12 @@ class TestEngine:
 
     def docase(self, cases):
         for case in cases.steps:
-            self.step_execute(cases, case, case.step_name, case.request_type, case.request_url, case.request_data_type,case.request_data,
+            self.step_execute(cases, case, case.step_name, case.request_type, case.request_url, case.request_data_type,
+                              case.request_data,
                               case.expect_code, case.expect_value, case.var_getvalue)
 
-    def step_execute(self, cases, case, step_name, request_type, request_url,request_data_type, request_data, expect_result, expect_value,
+    def step_execute(self, cases, case, step_name, request_type, request_url, request_data_type, request_data,
+                     expect_result, expect_value,
                      var_getvalue):
         if len(infer(request_data[0]).items()) <> 0:
             template = Template(request_data[0])
@@ -144,7 +148,10 @@ class TestEngine:
         status, content = self.request_list[request_type](request_url, cases.headers, request_data_type, request_data)
         print "status=", status
         print "content:", content
-        if status == expect_result:
+        content_data = json.loads(content)
+        print(content_data[u'result'])
+        print(content_data[u'result'] == expect_result)
+        if 200 == status and content_data[u'result'] == expect_result:
             print "\033[32;1m[SUCCESS] %s" % step_name
 
             # 获取出参
@@ -152,6 +159,7 @@ class TestEngine:
                 t = eval(val)
                 result = self.get_content(content, t.items()[0][1])
                 cases.env[t.items()[0][0]] = result
+                print(cases.env)
             # 检查入参
             for val in case.expect_value:
                 t = eval(val)
@@ -159,6 +167,7 @@ class TestEngine:
                     print "\033[32;1m[SUCCESS] %s" % t.items()[0][0]
                 else:
                     print "\033[31;1m[FAILED] %s" % t.items()[0][0]
+            print cases.env
         else:
             print "\033[31;1m[FAILED] %s" % step_name
 
@@ -229,17 +238,17 @@ def TestGetRequest(url, data_type, data):
     return r.status_code, r.content
 
 
-def TestPostRequest(url,headers, data_type, data):
+def TestPostRequest(url, headers, data_type, data):
     # return 200, '{"test": {"test2": {"test": "value"} } }'
     url = ADDRESS + url
-    print "235:url+",url
+    print "235:url+", url
     if data == None:
         r = requests.post(url)
     else:
         if data_type == "path":
-            r = requests.post(url,headers=headers, params=data[0])
+            r = requests.post(url, headers=headers, params=data[0])
         elif data_type == "body":
-            r = requests.post(url,headers=headers, data=data[0])
+            r = requests.post(url, headers=headers, data=data[0])
 
     return r.status_code, r.content
 
@@ -250,9 +259,9 @@ def TestPutRequest(url, headers, data_type, data):
         r = requests.put(url)
     else:
         if data_type == "path":
-            r = requests.put(url,headers=headers, params=data)
+            r = requests.put(url, headers=headers, params=data)
         elif data_type == "body":
-            r = requests.put(url,headers=headers, data=data)
+            r = requests.put(url, headers=headers, data=data)
 
     return r.status_code, r.content
 
@@ -263,9 +272,9 @@ def TestDeleteRequest(url, headers, data_type, data):
         r = requests.delete(url)
     else:
         if data_type == "path":
-            r = requests.delete(url,headers=headers, params=data)
+            r = requests.delete(url, headers=headers, params=data)
         elif data_type == "body":
-            r = requests.delete(url,headers=headers, data=data)
+            r = requests.delete(url, headers=headers, data=data)
 
     return r.status_code, r.content
 
