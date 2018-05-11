@@ -28,8 +28,8 @@ def parse_excel(cases_file):
         current_step = None
         for row in ws.iter_rows(max_col=8):
             if row[0].value == None:
-                if row[4].value <> None:
-                    current_step.request_data.append(row[4].value)
+                #if row[4].value <> None:
+                #    current_step.request_data.append(row[4].value)
                 if row[6].value <> None:
                     current_step.expect_value.append(row[6].value)
                 if row[7].value <> None:
@@ -121,14 +121,23 @@ class TestEngine:
 
         if request_type == None:
             return
-        status, content = self.request_list[request_type.encode('ascii')](request_url, "path", "test")
+        #status, content = self.request_list[request_type.encode('ascii')](request_url, "path", "test")
+        status, content = self.request_list[request_type](request_url, "path", "test")
         if status == expect_result:
             print "\033[32;1m[SUCCESS] %s" % step_name
+
+            # 获取出参
             for val in case.var_getvalue:
                 t = eval(val)
                 result = self.get_content(content, t.items()[0][1])
                 cases.env[t.items()[0][0]] = result
-
+            # 检查入参
+            for val in case.expect_value: 
+                t = eval(val)
+                if self.check_content(content, t.items()[0][1], t.items()[0][0]):
+                    print "\033[32;1m[SUCCESS] %s" % t.items()[0][0]
+                else:   
+                    print "\033[31;1m[FAILED] %s" % t.items()[0][0]
         else:
             print "\033[31;1m[FAILED] %s" % step_name
 
