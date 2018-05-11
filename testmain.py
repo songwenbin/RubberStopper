@@ -9,7 +9,7 @@ from oauthlib.oauth2 import BackendApplicationClient
 from requests_oauthlib import OAuth2Session
 from requests.auth import HTTPBasicAuth
 import testcase
-IP = 'http://192.168.1.79'
+IP = 'http://192.168.1.102'
 PORT = '8888'
 
 ADDRESS = "%s:%s" % (IP, PORT)
@@ -27,7 +27,6 @@ testcase1 = []
 
 class TestEngine:
     def __init__(self):
-        data = {}
         headers_data = TestOauthRequest()
         authorization = headers_data[u'token_type'] + " " + headers_data[u'access_token']
         headers = {
@@ -183,9 +182,13 @@ if __name__ == '__main__':
     # print TestOauthRequest()
     print(ADDRESS)
     # print(TestOauthRequest())
-
     te = TestEngine()
-    for index,value in enumerate(testcase.cases):
+    testpaperContent = "{\r\n\t\"author\": \"俞瑶\",\r\n\t\"belongToCourseId\": \"1\",\r\n\t\"belongToCourseName\": \"课程1\",\r\n\t\"code\": \"42d0000s2047\",\r\n\t\"name\": \"俞瑶创建的第23张新试卷\",\r\n\t\"testPaperStruct\": {\r\n\t\t\"questionTypeStruct\": [{\r\n\t\t\t\"name\": \"单选题\",\r\n\t\t\t\"no\": \"一\",\r\n\t\t\t\"questionInPaper\": [{\r\n\t\t\t\t\t\"no\": \"1\",\r\n\t\t\t\t\t\"questionId\": \"0768fa286a7347f89cb1f467e765db4e\",\r\n\t\t\t\t\t\"score\": 1.0\r\n\t\t\t\t},\r\n\t\t\t\t{\r\n\t\t\t\t\t\"no\": \"2\",\r\n\t\t\t\t\t\"questionId\": \"0768fa286a7347f89cb1f467e765db4e\",\r\n\t\t\t\t\t\"score\":2.0\r\n\t\t\t\t},\r\n\t\t\t\t{\r\n\t\t\t\t\t\"no\": \"3\",\r\n\t\t\t\t\t\"questionId\": \"0768fa286a7347f89cb1f467e765db4e\",\r\n\t\t\t\t\t\"score\": 3.0\r\n\t\t\t\t},\r\n\t\t\t\t{\r\n\t\t\t\t\t\"no\": \"4\",\r\n\t\t\t\t\t\"questionId\": \"0768fa286a7347f89cb1f467e765db4e\",\r\n\t\t\t\t\t\"score\": 4.0\r\n\t\t\t\t},\r\n\t\t\t\t{\r\n\t\t\t\t\t\"no\": \"5\",\r\n\t\t\t\t\t\"questionId\": \"0768fa286a7347f89cb1f467e765db4e\",\r\n\t\t\t\t\t\"score\": 5.0\r\n\t\t\t\t},\r\n\t\t\t\t{\r\n\t\t\t\t\t\"no\": \"6\",\r\n\t\t\t\t\t\"questionId\": \"0768fa286a7347f89cb1f467e765db4e\",\r\n\t\t\t\t\t\"score\": 6.0\r\n\t\t\t\t},\r\n\t\t\t\t{\r\n\t\t\t\t\t\"no\": \"7\",\r\n\t\t\t\t\t\"questionId\": \"0768fa286a7347f89cb1f467e765db4e\",\r\n\t\t\t\t\t\"score\": 7.0\r\n\t\t\t\t},\r\n\t\t\t\t{\r\n\t\t\t\t\t\"no\": \"8\",\r\n\t\t\t\t\t\"questionId\": \"0768fa286a7347f89cb1f467e765db4e\",\r\n\t\t\t\t\t\"score\": 8.0\r\n\t\t\t\t},\r\n\t\t\t\t{\r\n\t\t\t\t\t\"no\": \"9\",\r\n\t\t\t\t\t\"questionId\": \"0768fa286a7347f89cb1f467e765db4e\",\r\n\t\t\t\t\t\"score\": 9.0\r\n\t\t\t\t},\r\n\t\t\t\t{\r\n\t\t\t\t\t\"no\": \"10\",\r\n\t\t\t\t\t\"questionId\": \"0768fa286a7347f89cb1f467e765db4e\",\r\n\t\t\t\t\t\"score\": 10.0\r\n\t\t\t\t},\r\n\t\t\t\t{\r\n\t\t\t\t\t\"no\": \"11\",\r\n\t\t\t\t\t\"questionId\": \"0768fa286a7347f89cb1f467e765db4e\",\r\n\t\t\t\t\t\"score\": 4.5\r\n\t\t\t\t},\r\n\t\t\t\t{\r\n\t\t\t\t\t\"no\": \"12\",\r\n\t\t\t\t\t\"questionId\": \"0768fa286a7347f89cb1f467e765db4e\",\r\n\t\t\t\t\t\"score\": 4.5\r\n\t\t\t\t},\r\n\t\t\t\t{\r\n\t\t\t\t\t\"no\": \"13\",\r\n\t\t\t\t\t\"questionId\": \"0768fa286a7347f89cb1f467e765db4e\",\r\n\t\t\t\t\t\"score\": 4.5\r\n\t\t\t\t},\r\n\t\t\t\t{\r\n\t\t\t\t\t\"no\": \"14\",\r\n\t\t\t\t\t\"questionId\": \"0768fa286a7347f89cb1f467e765db4e\",\r\n\t\t\t\t\t\"score\": 4.5\r\n\t\t\t\t},\r\n\t\t\t\t{\r\n\t\t\t\t\t\"no\": \"15\",\r\n\t\t\t\t\t\"questionId\": \"0768fa286a7347f89cb1f467e765db4e\",\r\n\t\t\t\t\t\"score\": 4.5\r\n\t\t\t\t},\r\n\t\t\t\t{\r\n\t\t\t\t\t\"no\": \"16\",\r\n\t\t\t\t\t\"questionId\": \"0768fa286a7347f89cb1f467e765db4e\",\r\n\t\t\t\t\t\"score\": 4.5\r\n\t\t\t\t},\r\n\t\t\t\t{\r\n\t\t\t\t\t\"no\": \"17\",\r\n\t\t\t\t\t\"questionId\": \"0768fa286a7347f89cb1f467e765db4e\",\r\n\t\t\t\t\t\"score\": 4.5\r\n\t\t\t\t},\r\n\t\t\t\t{\r\n\t\t\t\t\t\"no\": \"18\",\r\n\t\t\t\t\t\"questionId\": \"0768fa286a7347f89cb1f467e765db4e\",\r\n\t\t\t\t\t\"score\":4.5\r\n\t\t\t\t},\r\n\t\t\t\t{\r\n\t\t\t\t\t\"no\": \"19\",\r\n\t\t\t\t\t\"questionId\": \"0768fa286a7347f89cb1f467e765db4e\",\r\n\t\t\t\t\t\"score\": 4.5\r\n\t\t\t\t},\r\n\t\t\t\t{\r\n\t\t\t\t\t\"no\": \"20\",\r\n\t\t\t\t\t\"questionId\": \"0768fa286a7347f89cb1f467e765db4e\",\r\n\t\t\t\t\t\"score\": 4.5\r\n\t\t\t\t}\r\n\t\t\t],\r\n\t\t\t\"score\": 100.0\r\n\t\t}],\r\n\t\t\"totalScore\": 100.0\r\n\t},\r\n\t\"totalScore\": 100.0,\r\n\t\"type\": \"期中考试\",\r\n\t\"usedCount\": \"10\"\r\n}"
+    case1 = ["添加组卷", "POST", "/testpapers/smart", {"body": testpaperContent}, 0, {"testpaperId": ["data", "id"]}]
+    # case2 = ["获取试卷详情", "GET", "/testpapers/" + str(testmain.data.get("testpaperId")), {}, 0, {"result": ["result"]}]
+    case2 = ["获取试卷详情", "GET", "/testpapers/"+str(data.get("testpaperId")), {}, 0, {"result": ["result"]}]
+    cases=[case1,case2]
+    for index,value in enumerate(cases):
         te.addcase(value)
         te.execute()
 
