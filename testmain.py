@@ -12,7 +12,6 @@ from requests.auth import HTTPBasicAuth
 
 import openpyxl
 
-import testcase
 IP = 'http://192.168.1.79'
 PORT = '8888'
 
@@ -24,37 +23,45 @@ def parse_excel(cases_file):
     wb = openpyxl.load_workbook(filename=cases_file)
 
     for name in wb.sheetnames:
-        print name
         case = UserCase(name)
         ws = wb[name]
-
         current_step = None
         for row in ws.iter_rows(max_col=8):
-            #if row[0].value == None:
-            #    current_step.request_data.append(row[4].value)
-            #    current_step.expect_value.append(row[6].value)
-            #    current_step.var_getvalue.append(row[7].value)
-            #else:
-            step = Step(row[0].value, row[1].value, row[2].value, row[3].value, row[5].value)
-            step.request_data.append(row[4].value)
-            step.expect_value.append(row[6].value)
-            step.var_getvalue.append(row[7].value)
-            print step.step_name
-            print step.request_url
-                
+            if row[0].value == None:
+                if row[4].value <> None:
+                    current_step.request_data.append(row[4].value)
+                if row[6].value <> None:
+                    current_step.expect_value.append(row[6].value)
+                if row[7].value <> None:
+                    current_step.var_getvalue.append(row[7].value)
+            else:
+                step = Step(row[0].value, row[1].value, row[2].value, row[3].value, row[5].value)
+                step.request_data.append(row[4].value)
+                step.expect_value.append(row[6].value)
+                step.var_getvalue.append(row[7].value)
+                    
             current_step = step
             case.steps.append(current_step)
-            print "goooooooooooooooooooooo2"
-            print step.var_getvalue
-            print "goooooooooooooooooooooo2"
 
         user_cases.append(case)
-    print user_cases
-
-    for case in user_cases:
-        for step in case.steps:
-            print step
     return user_cases
+
+def print_user_cases(user_cases):
+    for case in user_cases:
+        print "========== case name ============"
+        print case.name
+        for step in case.steps:
+            print "=====step case======="
+            print step.step_name
+            print step.request_type
+            print step.request_url
+            print step.request_data_type
+            print step.expect_code
+            print step.request_data
+            print step.expect_value
+            print step.var_getvalue
+            print "===================="
+        print "================================="
 
     
 class UserCase:
@@ -74,9 +81,6 @@ class Step:
         self.expect_value = []
         self.var_getvalue = []
 
-    #def __str__(self):
-    #    return "case_name: %s " % self.step_name.encode("utf-8")
-
 class TestEngine:
     def __init__(self):
         '''
@@ -95,6 +99,9 @@ class TestEngine:
         '''
         self.request_list = {}
         self.request_list["post"] = TestPostRequest
+        self.request_list["put"] = TestPutRequest
+        self.request_list["get"] = TestGetRequest
+        self.request_list["delete"] = TestDeleteRequest
         self.response_data = {}
 
     def execute(self, storys):
@@ -102,44 +109,24 @@ class TestEngine:
             self.docase(cases)
     def docase(self, cases):
         for case in cases.steps:
-            print "goooooooooooooooooooooo1"
-            print case.var_getvalue
-            print "goooooooooooooooooooooo1"
             self.step_execute(cases, case, case.step_name, case.request_type, case.request_url, case.request_data, case.expect_code, case.expect_value, case.var_getvalue)
 
     def step_execute(self, cases, case, step_name, request_type, request_url, request_data, expect_result, expect_value, var_getvalue):
-        print "goooooooooooooooooooooo"
-        print case.var_getvalue
-        print "goooooooooooooooooooooo"
-        print "xxxxxxx"
-        print request_data
         if len(infer(request_data[0]).items()) <> 0:
             template = Template(request_data[0])
             key = infer(request_data[0]).items()[0][0]
             t = dict()
             t.__setitem__(key, cases.env[key])
-            print "xxxxxxxxxxxxxxxsssssssssssssssssss"
             print template.render(t)
 
-        print type(request_type)
         if request_type == None:
             return
         status, content = self.request_list[request_type.encode('ascii')](request_url, "path", "test")
-        #responseData = TestRequest(request_type, request_url, request_data, self.headers)
-        #tt = json.loads(content)
         if status == expect_result:
             print "\033[32;1m[SUCCESS] %s" % step_name
-            print "=================="
-            print var_getvalue
-            print "==================xxxxx"
             for val in case.var_getvalue:
-                print val
-                print "xfsdfsdfsdf"
                 t = eval(val)
-                print t.items()[0][1]
-                print "3333333"
                 result = self.get_content(content, t.items()[0][1])
-                print result
                 cases.env[t.items()[0][0]] = result
 
         else:
@@ -160,8 +147,6 @@ class TestEngine:
             return temp_json
         else:
             return ""
-
-
 
     def check_content(self, content, json_keys, json_value):
         result_json = json.loads(content)
@@ -263,5 +248,6 @@ if __name__ == '__main__':
     #print te.check_content('{"test1": {"test2": 1}}', ["test1", "test2"], 1)
 
     user_cases = parse_excel("sample.xlsx")
+    print_user_cases(user_cases)
     te = TestEngine()
     te.execute(user_cases)
