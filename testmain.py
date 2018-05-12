@@ -32,8 +32,8 @@ def parse_excel(cases_file):
         ws = wb[name]
         current_step = None
         for row in ws.iter_rows(max_col=8):
-            if row[0]==None and row[6]==None and row[7]==None:
-                return 
+            if row[0] == None and row[6] == None and row[7] == None:
+                return
             if row[0].value == None:
                 # if row[4].value <> None:
                 #    current_step.request_data.append(row[4].value)
@@ -56,20 +56,20 @@ def parse_excel(cases_file):
 
 def print_user_cases(user_cases):
     for case in user_cases:
-        print "========== case name ============"
+        print "======================== case name =========================="
         print case.name
         for step in case.steps:
             print "=====step case======="
-            print step.step_name
-            print step.request_type
-            print step.request_url
-            print step.request_data_type
-            print step.expect_code
-            print step.request_data
-            print step.expect_value
-            print step.var_getvalue
+            print "step_name=",step.step_name
+            print "request_type=", step.request_type
+            print "request_url=", step.request_url
+            print "request_data_type=", step.request_data_type
+            print "expect_code=", step.expect_code
+            print "request_data=", step.request_data
+            print "expect_value=", step.expect_value
+            print "var_getvalue=", step.var_getvalue
             print "===================="
-        print "================================="
+        print "==============================================="
 
 
 class UserCase:
@@ -77,9 +77,9 @@ class UserCase:
         headers_data = TestOauthRequest()
         authorization = headers_data[u'token_type'] + " " + headers_data[u'access_token']
         headers = {
-            'content-type': "application/json",
-            'tenant': "tenant_test",
-            'authorization': authorization,
+            "content-type": "application/json",
+            "tenant": "tenant_test",
+            "authorization": authorization,
         }
         self.headers = headers
         self.name = name
@@ -140,28 +140,45 @@ class TestEngine:
             key = infer(request_data[0]).items()[0][0]
             t = dict()
             t.__setitem__(key, cases.env[key])
-            print template.render(t)
+            request_data[0] = template.render(t)
+            # print request_data[0]
+        if len(infer(request_url).items()) <> 0:
+            template = Template(request_url)
+            key = infer(request_url).items()[0][0]
+            t = dict()
+            if key in cases.env:
+                t.__setitem__(key, cases.env[key])
+                request_url = template.render(t)
+                # print request_url
 
         if request_type == None:
             return
         # status, content = self.request_list[request_type.encode('ascii')](request_url, "path", "test")
         status, content = self.request_list[request_type](request_url, cases.headers, request_data_type, request_data)
-        print "status=", status
-        print "content:", content
+        # print "status=", status
+        # print "content:", content
         content_data = json.loads(content)
-        print(content_data[u'result'])
-        print(content_data[u'result'] == expect_result)
+        if status != 200:
+            error = content_data[u'message'].encode('utf-8')
+            print "\033[31;1m[FAILED] %s" % step_name + "请求失败，错误信息为：" + str(status) + "," + error
+            return
+        # print(content_data[u'result'])
+        # print(content_data[u'result'] == expect_result)
         if 200 == status and content_data[u'result'] == expect_result:
             print "\033[32;1m[SUCCESS] %s" % step_name
-
             # 获取出参
             for val in case.var_getvalue:
+                if val == "{}" or val == "" or val == None:
+                    continue
                 t = eval(val)
                 result = self.get_content(content, t.items()[0][1])
                 cases.env[t.items()[0][0]] = result
-                print(cases.env)
+                # print(cases.env)
             # 检查入参
+
             for val in case.expect_value:
+                if val == "{}" or val == "" or val == None:
+                    continue
                 t = eval(val)
                 if self.check_content(content, t.items()[0][1], t.items()[0][0]):
                     print "\033[32;1m[SUCCESS] %s" % t.items()[0][0]
@@ -169,7 +186,7 @@ class TestEngine:
                     print "\033[31;1m[FAILED] %s" % t.items()[0][0]
             print cases.env
         else:
-            print "\033[31;1m[FAILED] %s" % step_name
+            print "\033[31;1m[FAILED] %s" % step_name + content_data[u'message']
 
     # key = [key1, key2, key3]
     def get_content(self, content, json_keys):
@@ -226,14 +243,16 @@ def TestRequest(type, url, reuest_data, headers):
 '''
 
 
-def TestGetRequest(url, data_type, data):
-    if data == None:
-        r = requests.get(url)
+def TestGetRequest(url, headers, data_type, data):
+    url = ADDRESS + url
+    if data[0] == None:
+        r = requests.get(url, headers=headers)
     else:
+        request_data = data[0].encode("utf-8")
         if data_type == "path":
-            r = requests.get(url, params=data)
+            r = requests.get(url, headers=headers, params=request_data)
         elif data_type == "body":
-            r = requests.get(url, data=data)
+            r = requests.get(url, headers=headers, data=request_data)
 
     return r.status_code, r.content
 
@@ -241,40 +260,43 @@ def TestGetRequest(url, data_type, data):
 def TestPostRequest(url, headers, data_type, data):
     # return 200, '{"test": {"test2": {"test": "value"} } }'
     url = ADDRESS + url
-    print "235:url+", url
+    request_data = data[0].encode("utf-8")
     if data == None:
         r = requests.post(url)
     else:
         if data_type == "path":
-            r = requests.post(url, headers=headers, params=data[0])
+            r = requests.post(url, headers=headers, params=request_data)
         elif data_type == "body":
-            r = requests.post(url, headers=headers, data=data[0])
+            # data[0]='{"deletable":"1","description":"测试2角1色","name":"测试角色1181","type":"自定义"}'
+            r = requests.post(url, headers=headers, data=request_data.encode("utf-8"))
 
     return r.status_code, r.content
 
 
 def TestPutRequest(url, headers, data_type, data):
     url = ADDRESS + url
-    if data == None:
+    request_data = data[0].encode("utf-8")
+    if data[0] == None:
         r = requests.put(url)
     else:
         if data_type == "path":
-            r = requests.put(url, headers=headers, params=data)
+            r = requests.put(url, headers=headers, params=request_data)
         elif data_type == "body":
-            r = requests.put(url, headers=headers, data=data)
+            r = requests.put(url, headers=headers, data=request_data)
 
     return r.status_code, r.content
 
 
 def TestDeleteRequest(url, headers, data_type, data):
     url = ADDRESS + url
-    if data == None:
+    request_data = data[0].encode("utf-8")
+    if data[0] == None:
         r = requests.delete(url)
     else:
         if data_type == "path":
-            r = requests.delete(url, headers=headers, params=data)
+            r = requests.delete(url, headers=headers, params=request_data)
         elif data_type == "body":
-            r = requests.delete(url, headers=headers, data=data)
+            r = requests.delete(url, headers=headers, data=request_data)
 
     return r.status_code, r.content
 
