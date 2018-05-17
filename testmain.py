@@ -17,7 +17,7 @@ reload(sys)
 sys.setdefaultencoding('utf8')
 
 IP = 'http://localhost'
-PORT = '8888'
+PORT = '8080'
 
 ADDRESS = "%s:%s" % (IP, PORT)
 URI = ""
@@ -60,7 +60,7 @@ def print_user_cases(user_cases):
         print case.name
         for step in case.steps:
             print "=====step case======="
-            print "step_name=",step.step_name
+            print "step_name=", step.step_name
             print "request_type=", step.request_type
             print "request_url=", step.request_url
             print "request_data_type=", step.request_data_type
@@ -120,6 +120,7 @@ class TestEngine:
         self.request_list["put"] = TestPutRequest
         self.request_list["get"] = TestGetRequest
         self.request_list["delete"] = TestDeleteRequest
+        self.request_list["patch"] = TestPatchRequest
         self.response_data = {}
 
     def execute(self, storys):
@@ -187,6 +188,7 @@ class TestEngine:
             print cases.env
         else:
             print "\033[31;1m[FAILED] %s" % step_name + content_data[u'message']
+        print request_url
 
     # key = [key1, key2, key3]
     def get_content(self, content, json_keys):
@@ -195,6 +197,9 @@ class TestEngine:
         temp_json = result_json
         for jkey in json_keys:
             if jkey in temp_json:
+                temp_json = temp_json[jkey]
+                i = i + 1
+            elif type(jkey) == type(1):
                 temp_json = temp_json[jkey]
                 i = i + 1
             else:
@@ -268,7 +273,7 @@ def TestPostRequest(url, headers, data_type, data):
             r = requests.post(url, headers=headers, params=request_data)
         elif data_type == "body":
             # data[0]='{"deletable":"1","description":"测试2角1色","name":"测试角色1181","type":"自定义"}'
-            r = requests.post(url, headers=headers, data=request_data.encode("utf-8"))
+            r = requests.post(url, headers=headers, data=request_data)
 
     return r.status_code, r.content
 
@@ -287,12 +292,25 @@ def TestPutRequest(url, headers, data_type, data):
     return r.status_code, r.content
 
 
+def TestPatchRequest(url, headers, data_type, data):
+    url = ADDRESS + url
+    if data[0] == None:
+        r = requests.patch(url, headers=headers)
+    else:
+        request_data = data[0].encode("utf-8")
+        if data_type == "path":
+            r = requests.patch(url, headers=headers, params=request_data)
+        elif data_type == "body":
+            r = requests.patch(url, headers=headers, data=request_data)
+    return r.status_code, r.content
+
+
 def TestDeleteRequest(url, headers, data_type, data):
     url = ADDRESS + url
-    request_data = data[0].encode("utf-8")
     if data[0] == None:
-        r = requests.delete(url)
+        r = requests.delete(url, headers=headers)
     else:
+        request_data = data[0].encode("utf-8")
         if data_type == "path":
             r = requests.delete(url, headers=headers, params=request_data)
         elif data_type == "body":
@@ -327,7 +345,7 @@ if __name__ == '__main__':
 
     # print te.check_content('{"test1": {"test2": 1}}', ["test1", "test2"], 1)
 
-    user_cases = parse_excel("sample.xlsx")
+    user_cases = parse_excel("testcase.xlsx")
     print_user_cases(user_cases)
     te = TestEngine()
     te.execute(user_cases)
