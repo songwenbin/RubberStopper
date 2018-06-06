@@ -17,7 +17,7 @@ reload(sys)
 sys.setdefaultencoding('utf8')
 
 IP = 'http://localhost'
-PORT = '8080'
+PORT = '8888'
 
 ADDRESS = "%s:%s" % (IP, PORT)
 URI = ""
@@ -46,7 +46,6 @@ def parse_excel(cases_file):
                 step.request_data.append(row[4].value)
                 step.expect_value.append(row[6].value)
                 step.var_getvalue.append(row[7].value)
-
             current_step = step
             case.steps.append(current_step)
 
@@ -159,6 +158,7 @@ class TestEngine:
         # print "status=", status
         # print "content:", content
         content_data = json.loads(content)
+        print content_data
         if status != 200:
             error = content_data[u'message'].encode('utf-8')
             print "\033[31;1m[FAILED] %s" % step_name + "请求失败，错误信息为：" + str(status) + "," + error
@@ -168,12 +168,16 @@ class TestEngine:
         if 200 == status and content_data[u'result'] == expect_result:
             print "\033[32;1m[SUCCESS] %s" % step_name
             # 获取出参
+            print(case.var_getvalue)
             for val in case.var_getvalue:
                 if val == "{}" or val == "" or val == None:
+                    k+=1
                     continue
                 t = eval(val)
-                result = self.get_content(content, t.items()[0][1])
-                cases.env[t.items()[0][0]] = result
+                for tt in t:
+                    result = self.get_content(content, t[tt])
+                  #  cases.env[t.items()[0][0]] = result
+                    cases.env[tt] = result
                 # print(cases.env)
             # 检查入参
 
@@ -215,6 +219,9 @@ class TestEngine:
         temp_json = result_json
         for jkey in json_keys:
             if jkey in temp_json:
+                temp_json = temp_json[jkey]
+                i = i + 1
+            elif type(jkey) == type(1):
                 temp_json = temp_json[jkey]
                 i = i + 1
             else:
@@ -267,7 +274,7 @@ def TestPostRequest(url, headers, data_type, data):
     url = ADDRESS + url
     request_data = data[0].encode("utf-8")
     if data == None:
-        r = requests.post(url)
+        r = requests.post(url,headers=headers)
     else:
         if data_type == "path":
             r = requests.post(url, headers=headers, params=request_data)
@@ -282,7 +289,7 @@ def TestPutRequest(url, headers, data_type, data):
     url = ADDRESS + url
     request_data = data[0].encode("utf-8")
     if data[0] == None:
-        r = requests.put(url)
+        r = requests.put(url, headers=headers)
     else:
         if data_type == "path":
             r = requests.put(url, headers=headers, params=request_data)
@@ -344,7 +351,7 @@ if __name__ == '__main__':
     #    te.execute()
 
     # print te.check_content('{"test1": {"test2": 1}}', ["test1", "test2"], 1)
-
+    print ADDRESS
     user_cases = parse_excel("testcase.xlsx")
     print_user_cases(user_cases)
     te = TestEngine()
